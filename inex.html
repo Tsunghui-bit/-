@@ -5,11 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>家鄉園越南河粉財務結算系統</title>
 
-    <!-- iOS App 專用設定 -->
+    <!-- 1. iOS App 專用桌面圖示與全螢幕設定 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="家鄉園財務">
     <meta name="format-detection" content="telephone=no">
+
+    <!-- 內嵌專屬 App 桌面圖示 (橘底越南河粉湯碗) -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%23d35400'/%3E%3Ctext x='50%25' y='65%25' font-size='270' text-anchor='middle' font-family='Apple Color Emoji, Segoe UI Emoji'%3E%F0%9F%8D%B2%3C/text%3E%3C/svg%3E">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%23d35400'/%3E%3Ctext x='50%25' y='65%25' font-size='270' text-anchor='middle' font-family='Apple Color Emoji, Segoe UI Emoji'%3E%F0%9F%8D%B2%3C/text%3E%3C/svg%3E">
 
     <!-- 引入 PDF 生成函式庫 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -72,7 +76,7 @@
             border: 1px solid var(--border);
             padding: 8px 12px;
             border-radius: 10px;
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             color: var(--text-main);
             cursor: pointer;
             display: flex;
@@ -576,10 +580,10 @@
         
         <div class="tag-group-title">【食材與包材進貨】</div>
         <div class="tag-grid">
-            <button type="button" class="tag-btn active" data-cat="牛肉/肉品/海鮮" data-type="ingredient">牛肉/肉品/海鮮</button>
-            <button type="button" class="tag-btn" data-cat="河粉/麵條/白米" data-type="ingredient">河粉/麵條/白米</button>
-            <button type="button" class="tag-btn" data-cat="蔬菜/蔥薑蒜" data-type="ingredient">蔬菜/蔥薑蒜</button>
-            <button type="button" class="tag-btn" data-cat="醬料/調味/辣椒檸檬" data-type="ingredient">醬料/調味/辣椒檸檬</button>
+            <button type="button" class="tag-btn active" data-cat="牛肉/肉品" data-type="ingredient">牛肉/肉品</button>
+            <button type="button" class="tag-btn" data-cat="河粉/麵條" data-type="ingredient">河粉/麵條</button>
+            <button type="button" class="tag-btn" data-cat="蔬菜/香草" data-type="ingredient">蔬菜/香草</button>
+            <button type="button" class="tag-btn" data-cat="醬料/調味" data-type="ingredient">醬料/調味</button>
             <button type="button" class="tag-btn" data-cat="包材/餐具" data-type="ingredient">包材/餐具</button>
             <button type="button" class="tag-btn" data-cat="其他食材" data-type="ingredient">其他食材</button>
         </div>
@@ -684,12 +688,10 @@
     </div>
 
     <script>
-        // 月份與日期定義
-        const currentMonthKey = new Date().toISOString().slice(0, 7); // "YYYY-MM"
-        const currentDayKey = new Date().toISOString().slice(0, 10);  // "YYYY-MM-DD"
+        const currentMonthKey = new Date().toISOString().slice(0, 7);
+        const currentDayKey = new Date().toISOString().slice(0, 10);
         const STORAGE_KEY = 'PHO_STORE_MONTH_DATA_' + currentMonthKey;
 
-        // 初始化月度資料庫
         let monthlyData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
             rent: '',
             days: {}
@@ -702,10 +704,9 @@
             };
         }
 
-        let selectedCategory = '牛肉/肉品/海鮮';
+        let selectedCategory = '牛肉/肉品';
         let selectedType = 'ingredient';
 
-        // DOM 選取
         const currentDateText = document.getElementById('current-date-text');
         const monthEndBanner = document.getElementById('month-end-banner');
         const rentInput = document.getElementById('monthly-rent-input');
@@ -732,20 +733,17 @@
         const exportPdfBtn = document.getElementById('export-pdf-btn');
         const tagButtons = document.querySelectorAll('.tag-btn');
 
-        // 選單 DOM
         const openMenuBtn = document.getElementById('open-menu-btn');
         const closeMenuBtn = document.getElementById('close-menu-btn');
         const drawerBackdrop = document.getElementById('drawer-backdrop');
         const sidebarDrawer = document.getElementById('sidebar-drawer');
         const historyListContainer = document.getElementById('history-list-container');
 
-        // 日期在地化呈現
         const today = new Date();
         currentDateText.innerText = today.toLocaleDateString('zh-TW', {
             year: 'numeric', month: 'long', day: 'numeric', weekday: 'long'
         });
 
-        // 月底提醒檢查
         function checkMonthEnd() {
             const nextDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
             if (nextDay.getDate() === 1) {
@@ -754,7 +752,6 @@
         }
         checkMonthEnd();
 
-        // 載入今日與租金資料
         rentInput.value = monthlyData.rent || '';
         const todayRecord = monthlyData.days[currentDayKey];
         incCash.value = todayRecord.income.cash || '';
@@ -762,7 +759,6 @@
         incPanda.value = todayRecord.income.panda || '';
         incUber.value = todayRecord.income.uber || '';
 
-        // 標籤切換
         tagButtons.forEach(btn => {
             btn.addEventListener('click', () => {
                 tagButtons.forEach(b => b.classList.remove('active'));
@@ -772,7 +768,6 @@
             });
         });
 
-        // 核心計算與渲染
         function updateAll() {
             monthlyData.rent = rentInput.value;
             todayRecord.income = {
@@ -821,7 +816,6 @@
 
             const todayNet = todayIncome - todayExpense;
 
-            // 計算當月累積
             let monthTotalIncome = 0;
             let monthTotalExpense = 0;
 
@@ -848,7 +842,6 @@
             localStorage.setItem(STORAGE_KEY, JSON.stringify(monthlyData));
         }
 
-        // 輸入監聽
         [incCash, incPxpay, incPanda, incUber, rentInput].forEach(inp => {
             inp.addEventListener('input', updateAll);
         });
@@ -885,7 +878,6 @@
             }
         };
 
-        // 一鍵複製今日 LINE 日結
         function copyTodaySummary() {
             const tCash = parseFloat(incCash.value) || 0;
             const tPxpay = parseFloat(incPxpay.value) || 0;
@@ -941,7 +933,6 @@
             }
         }
 
-        // 通用 PDF 匯出函式（支援當月與歷史月份）
         function generateMonthPDF(monthKey, dataObj) {
             let mIncome = 0;
             let mIngredient = 0;
@@ -989,12 +980,10 @@
             });
         }
 
-        // 匯出當前月份 PDF
         function exportCurrentMonthPDF() {
             generateMonthPDF(currentMonthKey, monthlyData);
         }
 
-        // 右側選單管理邏輯
         function openDrawer() {
             renderHistoryList();
             drawerBackdrop.classList.add('active');
@@ -1006,7 +995,6 @@
             drawerBackdrop.classList.remove('active');
         }
 
-        // 掃描 LocalStorage 中的歷史月份
         function renderHistoryList() {
             historyListContainer.innerHTML = '';
             const allMonthKeys = [];
@@ -1078,7 +1066,6 @@
             }
         };
 
-        // 事件監聽綁定
         addExpBtn.addEventListener('click', addExpense);
         copySummaryBtn.addEventListener('click', copyTodaySummary);
         clearTodayBtn.addEventListener('click', clearToday);
@@ -1092,7 +1079,6 @@
             if (e.key === 'Enter') addExpense();
         });
 
-        // 初始載入渲染
         updateAll();
     </script>
 </body>

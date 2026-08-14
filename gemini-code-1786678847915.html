@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>河粉小店記帳</title>
+
+    <!-- iOS App 專用全螢幕與主畫面設定 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="河粉記帳">
+
+    <style>
+        :root {
+            --primary-color: #d35400;
+            --primary-hover: #e67e22;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-color: #2c3e50;
+            --border-color: #e2e8f0;
+            --danger-color: #e74c3c;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: env(safe-area-inset-top, 16px) 16px env(safe-area-inset-bottom, 16px) 16px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin: 12px 0 16px 0;
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            margin-bottom: 4px;
+        }
+
+        header p {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border-color);
+        }
+
+        .total-banner {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+            color: white;
+            text-align: center;
+            padding: 20px;
+            border-radius: 14px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 12px rgba(211, 84, 0, 0.25);
+        }
+
+        .total-banner .label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .total-banner .amount {
+            font-size: 2.3rem;
+            font-weight: 800;
+            margin-top: 4px;
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 1.1rem;
+            outline: none;
+            background-color: #fafafa;
+        }
+
+        input:focus {
+            border-color: var(--primary-color);
+            background-color: #fff;
+        }
+
+        .category-tags {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .tag-btn {
+            background: #edf2f7;
+            border: 1px solid var(--border-color);
+            padding: 10px 4px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .tag-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .btn-submit {
+            width: 100%;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 15px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .btn-submit:active {
+            background-color: #ba4a00;
+        }
+
+        .list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .item-list {
+            list-style: none;
+        }
+
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .item-row:last-child {
+            border-bottom: none;
+        }
+
+        .item-info .item-name {
+            font-weight: 600;
+            font-size: 1.05rem;
+        }
+
+        .item-info .item-cat {
+            font-size: 0.8rem;
+            color: #7f8c8d;
+            margin-top: 2px;
+        }
+
+        .item-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .item-price {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #27ae60;
+        }
+
+        .btn-delete {
+            background: none;
+            border: none;
+            color: var(--danger-color);
+            font-size: 1.2rem;
+            padding: 6px 10px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .btn-secondary {
+            flex: 1;
+            padding: 13px;
+            border: 1px solid var(--border-color);
+            background: #ffffff;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #95a5a6;
+            padding: 24px 0;
+            font-size: 0.95rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🍲 河粉小店進貨記帳</h1>
+        <p id="current-date"></p>
+    </header>
+
+    <div class="total-banner">
+        <div class="label">今日進貨總支出</div>
+        <div class="amount" id="total-amount">NT$ 0</div>
+    </div>
+
+    <div class="card">
+        <div class="form-group">
+            <label>快速選擇品類</label>
+            <div class="category-tags" id="category-container">
+                <button type="button" class="tag-btn active" data-category="牛肉/肉品">牛肉/肉品</button>
+                <button type="button" class="tag-btn" data-category="河粉/麵條">河粉/麵條</button>
+                <button type="button" class="tag-btn" data-category="蔬菜/香草">蔬菜/香草</button>
+                <button type="button" class="tag-btn" data-category="醬料/調味">醬料/調味</button>
+                <button type="button" class="tag-btn" data-category="包材/餐具">包材/餐具</button>
+                <button type="button" class="tag-btn" data-category="其他雜支">其他雜支</button>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="item-name">廠商 / 品名備註（選填）</label>
+            <input type="text" id="item-name" placeholder="例如：牛大骨、九層塔">
+        </div>
+
+        <div class="form-group">
+            <label for="item-amount">發票 / 單據金額 (NT$)</label>
+            <input type="number" id="item-amount" inputmode="numeric" placeholder="請輸入金額">
+        </div>
+
+        <button type="button" class="btn-submit" id="add-btn">＋ 加入今日清單</button>
+    </div>
+
+    <div class="card">
+        <div class="list-header">
+            <h3>今日進貨單據 (<span id="item-count">0</span> 筆)</h3>
+        </div>
+
+        <ul class="item-list" id="invoice-list"></ul>
+
+        <div class="action-buttons">
+            <button class="btn-secondary" id="copy-summary-btn">📋 複製結算文字</button>
+            <button class="btn-secondary" id="clear-all-btn" style="color: var(--danger-color);">🗑️ 清空重記</button>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'PHO_SHOP_INVOICES_' + new Date().toISOString().split('T')[0];
+        let invoices = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        let selectedCategory = '牛肉/肉品';
+
+        const totalAmountEl = document.getElementById('total-amount');
+        const itemCountEl = document.getElementById('item-count');
+        const invoiceListEl = document.getElementById('invoice-list');
+        const itemNameInput = document.getElementById('item-name');
+        const itemAmountInput = document.getElementById('item-amount');
+        const addBtn = document.getElementById('add-btn');
+        const copySummaryBtn = document.getElementById('copy-summary-btn');
+        const clearAllBtn = document.getElementById('clear-all-btn');
+        const currentDateEl = document.getElementById('current-date');
+        const categoryButtons = document.querySelectorAll('.tag-btn');
+
+        const today = new Date();
+        currentDateEl.innerText = today.toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+
+        categoryButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                categoryButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedCategory = btn.dataset.category;
+            });
+        });
+
+        function render() {
+            invoiceListEl.innerHTML = '';
+            let total = 0;
+
+            if (invoices.length === 0) {
+                invoiceListEl.innerHTML = '<div class="empty-state">尚未新增紀錄，請輸入金額開始記帳！</div>';
+            } else {
+                invoices.forEach((item, index) => {
+                    total += Number(item.amount);
+                    const li = document.createElement('li');
+                    li.className = 'item-row';
+                    li.innerHTML = `
+                        <div class="item-info">
+                            <div class="item-name">${item.name || item.category}</div>
+                            <div class="item-cat">${item.category} · ${item.time}</div>
+                        </div>
+                        <div class="item-right">
+                            <div class="item-price">NT$ ${Number(item.amount).toLocaleString()}</div>
+                            <button class="btn-delete" onclick="deleteItem(${index})">✕</button>
+                        </div>
+                    `;
+                    invoiceListEl.appendChild(li);
+                });
+            }
+
+            totalAmountEl.innerText = `NT$ ${total.toLocaleString()}`;
+            itemCountEl.innerText = invoices.length;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(invoices));
+        }
+
+        function addItem() {
+            const amount = parseFloat(itemAmountInput.value);
+            if (!amount || amount <= 0) {
+                alert('請輸入有效金額！');
+                itemAmountInput.focus();
+                return;
+            }
+
+            const now = new Date();
+            const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+            invoices.unshift({
+                name: itemNameInput.value.trim(),
+                category: selectedCategory,
+                amount: amount,
+                time: timeStr
+            });
+
+            render();
+            itemNameInput.value = '';
+            itemAmountInput.value = '';
+            itemAmountInput.focus();
+        }
+
+        window.deleteItem = function(index) {
+            if (confirm('確定要刪除這筆紀錄嗎？')) {
+                invoices.splice(index, 1);
+                render();
+            }
+        };
+
+        function copySummary() {
+            if (invoices.length === 0) {
+                alert('目前沒有紀錄可複製！');
+                return;
+            }
+
+            let total = 0;
+            let report = `【河粉小店 每日進貨結算】\n日期：${currentDateEl.innerText}\n--------------------\n`;
+            invoices.forEach((item, idx) => {
+                total += item.amount;
+                report += `${idx + 1}. [${item.category}] ${item.name || '進貨'} - NT$ ${item.amount.toLocaleString()}\n`;
+            });
+            report += `--------------------\n共 ${invoices.length} 筆，總計支出：NT$ ${total.toLocaleString()}`;
+
+            navigator.clipboard.writeText(report).then(() => {
+                alert('已複製今日結算報表！可以直接貼到 LINE。');
+            }).catch(() => {
+                alert('複製失敗，請手動選取。');
+            });
+        }
+
+        function clearAll() {
+            if (invoices.length === 0) return;
+            if (confirm('確定要清空今天所有的紀錄嗎？')) {
+                invoices = [];
+                render();
+            }
+        }
+
+        addBtn.addEventListener('click', addItem);
+        copySummaryBtn.addEventListener('click', copySummary);
+        clearAllBtn.addEventListener('click', clearAll);
+
+        itemAmountInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addItem();
+        });
+
+        render();
+    </script>
+</body>
+</html>

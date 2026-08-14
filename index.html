@@ -2,105 +2,185 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <!-- 禁止 iOS Safari 雙擊放大，確保點擊反應即時 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>河粉小店記帳</title>
+    <title>家鄉園越南河粉財務結算系統</title>
 
-    <!-- iOS PWA 專屬設定：支援全螢幕、自訂主畫面標題 -->
+    <!-- iOS App 專用設定 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="河粉記帳">
+    <meta name="apple-mobile-web-app-title" content="家鄉園財務">
     <meta name="format-detection" content="telephone=no">
+
+    <!-- 引入 PDF 生成函式庫 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
         :root {
             --primary: #d35400;
-            --primary-active: #a04000;
+            --primary-hover: #ba4a00;
+            --income: #27ae60;
+            --ingredient: #e67e22;
+            --operating: #8e44ad;
+            --danger: #e74c3c;
             --bg-color: #f4f6f8;
             --card-bg: #ffffff;
             --text-main: #2c3e50;
             --text-sub: #7f8c8d;
             --border: #e2e8f0;
-            --danger: #e74c3c;
-            --success: #27ae60;
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
 
         body {
             background-color: var(--bg-color);
             color: var(--text-main);
-            padding: env(safe-area-inset-top, 16px) 16px env(safe-area-inset-bottom, 20px) 16px;
-            max-width: 600px;
+            padding: env(safe-area-inset-top, 16px) 16px env(safe-area-inset-bottom, 24px) 16px;
+            max-width: 650px;
             margin: 0 auto;
+            position: relative;
+            overflow-x: hidden;
         }
 
-        header {
-            text-align: center;
-            margin: 16px 0;
+        /* 頂部導航列 */
+        .top-navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 8px 0 14px 0;
         }
 
-        header h1 {
-            font-size: 1.5rem;
+        .header-title h1 {
+            font-size: 1.35rem;
             color: var(--primary);
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
-        header p {
-            font-size: 0.85rem;
+        .date-badge {
+            font-size: 0.82rem;
             color: var(--text-sub);
+            font-weight: 500;
         }
 
-        .total-card {
-            background: linear-gradient(135deg, #e67e22, var(--primary));
-            color: #ffffff;
+        .btn-menu-toggle {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 1.05rem;
+            color: var(--text-main);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+        }
+
+        /* 月底提醒橫幅 */
+        .month-end-alert {
+            display: none;
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+            padding: 12px 14px;
+            border-radius: 10px;
+            margin-bottom: 14px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* 統計面板 */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 12px 10px;
             text-align: center;
-            padding: 22px 16px;
-            border-radius: 14px;
-            margin-bottom: 16px;
-            box-shadow: 0 4px 12px rgba(211, 84, 0, 0.2);
+            border: 1px solid var(--border);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
         }
 
-        .total-card .label {
-            font-size: 0.85rem;
-            opacity: 0.9;
+        .stat-card.main-stat {
+            grid-column: span 2;
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: #ffffff;
+            padding: 14px;
         }
 
-        .total-card .amount {
-            font-size: 2.2rem;
+        .stat-card .label {
+            font-size: 0.75rem;
+            color: var(--text-sub);
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+
+        .stat-card.main-stat .label {
+            color: #bdc3c7;
+        }
+
+        .stat-card .value {
+            font-size: 1.2rem;
             font-weight: 800;
-            margin-top: 4px;
+        }
+
+        .stat-card.main-stat .value {
+            font-size: 1.7rem;
+            color: #f1c40f;
         }
 
         .card {
             background: var(--card-bg);
             border-radius: 14px;
             padding: 16px;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
             border: 1px solid var(--border);
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         }
 
-        .form-group {
+        .card-header {
+            font-size: 1rem;
+            font-weight: 700;
             margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        label {
+        /* 輸入框佈局 */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .field-group {
+            margin-bottom: 8px;
+        }
+
+        .field-group label {
             display: block;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-weight: 600;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
+            color: #555;
         }
 
         input {
             width: 100%;
-            padding: 13px;
+            padding: 12px;
             border: 1px solid var(--border);
             border-radius: 8px;
             font-size: 1rem;
@@ -114,25 +194,33 @@
             background: #ffffff;
         }
 
-        .category-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
+        /* 標籤群組 */
+        .tag-group-title {
+            font-size: 0.75rem;
+            color: var(--text-sub);
+            margin: 6px 0 4px 0;
+            font-weight: 600;
         }
 
-        .cat-btn {
+        .tag-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .tag-btn {
             background: #edf2f7;
             border: 1px solid var(--border);
-            padding: 10px 4px;
+            padding: 9px 2px;
             border-radius: 8px;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-weight: 600;
-            color: var(--text-main);
             cursor: pointer;
             text-align: center;
         }
 
-        .cat-btn.active {
+        .tag-btn.active {
             background: var(--primary);
             color: #ffffff;
             border-color: var(--primary);
@@ -152,22 +240,10 @@
         }
 
         .btn-main:active {
-            background: var(--primary-active);
+            background: var(--primary-hover);
         }
 
-        .list-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-bottom: 8px;
-            border-bottom: 1px solid var(--border);
-            margin-bottom: 8px;
-        }
-
-        .list-header h3 {
-            font-size: 1rem;
-        }
-
+        /* 明細清單 */
         .item-list {
             list-style: none;
         }
@@ -176,7 +252,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 0;
+            padding: 10px 0;
             border-bottom: 1px solid var(--border);
         }
 
@@ -184,27 +260,36 @@
             border-bottom: none;
         }
 
-        .item-title {
+        .item-name {
             font-weight: 600;
             font-size: 0.95rem;
         }
 
-        .item-subtitle {
-            font-size: 0.8rem;
-            color: var(--text-sub);
+        .item-meta {
+            font-size: 0.75rem;
             margin-top: 2px;
         }
 
-        .item-right {
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        .badge-ing {
+            color: var(--ingredient);
+            background: #fdf2e9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .badge-ope {
+            color: var(--operating);
+            background: #f4ecf7;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
         }
 
         .item-cost {
-            font-size: 1.05rem;
+            font-size: 1rem;
             font-weight: 700;
-            color: var(--success);
+            color: var(--danger);
         }
 
         .btn-del {
@@ -213,17 +298,19 @@
             color: var(--danger);
             font-size: 1.1rem;
             padding: 4px 6px;
+            cursor: pointer;
         }
 
+        /* 操作按鈕群 */
         .btn-group {
-            display: flex;
-            gap: 8px;
-            margin-top: 14px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
         }
 
         .btn-sub {
-            flex: 1;
-            padding: 12px;
+            padding: 13px;
             border: 1px solid var(--border);
             background: #ffffff;
             border-radius: 8px;
@@ -232,193 +319,773 @@
             cursor: pointer;
         }
 
+        .btn-pdf {
+            grid-column: span 2;
+            background: #2c3e50;
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
         .empty-text {
             text-align: center;
             color: var(--text-sub);
-            padding: 20px 0;
-            font-size: 0.9rem;
+            padding: 16px 0;
+            font-size: 0.85rem;
+        }
+
+        /* 右側選單樣式 */
+        .drawer-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 998;
+        }
+
+        .drawer-backdrop.active {
+            display: block;
+        }
+
+        .sidebar-drawer {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 85%;
+            max-width: 380px;
+            height: 100vh;
+            background: #ffffff;
+            box-shadow: -4px 0 16px rgba(0, 0, 0, 0.15);
+            z-index: 999;
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            padding: env(safe-area-inset-top, 20px) 16px env(safe-area-inset-bottom, 20px) 16px;
+        }
+
+        .sidebar-drawer.open {
+            transform: translateX(0);
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 12px;
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.15rem;
+            color: var(--text-main);
+        }
+
+        .btn-close-drawer {
+            background: none;
+            border: none;
+            font-size: 1.4rem;
+            color: var(--text-sub);
+            cursor: pointer;
+            padding: 4px 8px;
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .history-card {
+            background: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+
+        .history-card-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            font-size: 0.95rem;
+            margin-bottom: 6px;
+            color: var(--primary);
+        }
+
+        .history-stat-row {
+            font-size: 0.8rem;
+            color: var(--text-main);
+            margin-bottom: 3px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .btn-history-pdf {
+            width: 100%;
+            background: #2c3e50;
+            color: white;
+            border: none;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        /* PDF 帳單隱藏容器 */
+        #pdf-invoice-template {
+            display: none;
+            background: #ffffff;
+            padding: 30px;
+            color: #2c3e50;
+            font-family: -apple-system, sans-serif;
+        }
+
+        .pdf-title {
+            text-align: center;
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .pdf-subtitle {
+            text-align: center;
+            font-size: 13px;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+        }
+
+        .pdf-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .pdf-table th, .pdf-table td {
+            border: 1px solid #bdc3c7;
+            padding: 10px;
+            font-size: 13px;
+        }
+
+        .pdf-table th {
+            background-color: #ecf0f1;
+            text-align: left;
+        }
+
+        .pdf-total-box {
+            background: #f8f9fa;
+            border: 2px solid #2c3e50;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
         }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>🍲 河粉小店進貨記帳</h1>
-        <p id="current-date"></p>
-    </header>
-
-    <div class="total-card">
-        <div class="label">今日進貨總支出</div>
-        <div class="amount" id="total-amount">NT$ 0</div>
+    <!-- 頂部標頭與右側選單按鈕 -->
+    <div class="top-navbar">
+        <div class="header-title">
+            <h1>🍲 家鄉園越南河粉財務結算</h1>
+            <div class="date-badge" id="current-date-text"></div>
+        </div>
+        <button type="button" class="btn-menu-toggle" id="open-menu-btn">
+            ☰ <span style="font-size: 0.85rem; font-weight: 600;">選單</span>
+        </button>
     </div>
 
+    <!-- 月底提醒橫幅 -->
+    <div class="month-end-alert" id="month-end-banner">
+        <span>📢 今天是本月最後一天！請記得匯出月結 PDF 帳單。</span>
+    </div>
+
+    <!-- 1. 財務統計看板 -->
+    <div class="dashboard">
+        <div class="stat-card">
+            <div class="label">今日總營業額</div>
+            <div class="value" id="today-income-val" style="color: var(--income);">NT$ 0</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">今日總支出 (進貨+雜支)</div>
+            <div class="value" id="today-expense-val" style="color: var(--danger);">NT$ 0</div>
+        </div>
+        <div class="stat-card main-stat">
+            <div class="label">今日結算淨額 (今日營收 - 今日支出)</div>
+            <div class="value" id="today-net-val">NT$ 0</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">本月累積營業額</div>
+            <div class="value" id="month-income-val" style="color: var(--income);">NT$ 0</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">本月預估累積淨利 (扣租金)</div>
+            <div class="value" id="month-net-val" style="color: #2980b9;">NT$ 0</div>
+        </div>
+    </div>
+
+    <!-- 2. 每月固定租金設定 -->
     <div class="card">
-        <div class="form-group">
-            <label>選擇進貨類別</label>
-            <div class="category-grid" id="category-container">
-                <button type="button" class="cat-btn active" data-cat="牛肉/肉品">牛肉/肉品</button>
-                <button type="button" class="cat-btn" data-cat="河粉/麵條">河粉/麵條</button>
-                <button type="button" class="cat-btn" data-cat="蔬菜/香草">蔬菜/香草</button>
-                <button type="button" class="cat-btn" data-cat="醬料/調味">醬料/調味</button>
-                <button type="button" class="cat-btn" data-cat="包材/餐具">包材/餐具</button>
-                <button type="button" class="cat-btn" data-cat="其他雜支">其他雜支</button>
+        <div class="card-header">
+            <span>🏠 本月店面租金設定</span>
+            <span style="font-size: 0.75rem; color: var(--text-sub);">每月自動扣除</span>
+        </div>
+        <div class="field-group">
+            <input type="number" id="monthly-rent-input" inputmode="numeric" placeholder="請輸入本月租金 (例如: 30000)">
+        </div>
+    </div>
+
+    <!-- 3. 今日營業額輸入 (即時自動儲存) -->
+    <div class="card">
+        <div class="card-header">
+            <span>💰 今日營業額登記 (隨時自動存檔)</span>
+        </div>
+        <div class="grid-2">
+            <div class="field-group">
+                <label for="inc-cash">💵 現場現金</label>
+                <input type="number" id="inc-cash" inputmode="numeric" placeholder="0">
+            </div>
+            <div class="field-group">
+                <label for="inc-pxpay">📱 全支付</label>
+                <input type="number" id="inc-pxpay" inputmode="numeric" placeholder="0">
+            </div>
+            <div class="field-group">
+                <label for="inc-panda">🐼 Foodpanda</label>
+                <input type="number" id="inc-panda" inputmode="numeric" placeholder="0">
+            </div>
+            <div class="field-group">
+                <label for="inc-uber">🟢 Uber Eats</label>
+                <input type="number" id="inc-uber" inputmode="numeric" placeholder="0">
             </div>
         </div>
-
-        <div class="form-group">
-            <label for="item-name">品項 / 廠商備註（選填）</label>
-            <input type="text" id="item-name" placeholder="例如：牛大骨、檸檬、九層塔">
-        </div>
-
-        <div class="form-group">
-            <label for="item-amount">發票 / 單據金額 (NT$)</label>
-            <input type="number" id="item-amount" inputmode="numeric" placeholder="請輸入金額">
-        </div>
-
-        <button type="button" class="btn-main" id="add-btn">＋ 加入今日清單</button>
     </div>
 
+    <!-- 4. 今日支出輸入 -->
     <div class="card">
-        <div class="list-header">
-            <h3>今日進貨明細 (<span id="item-count">0</span> 筆)</h3>
+        <div class="card-header">
+            <span>🧾 今日進貨與營運支出</span>
+        </div>
+        
+        <div class="tag-group-title">【食材與包材進貨】</div>
+        <div class="tag-grid">
+            <button type="button" class="tag-btn active" data-cat="牛肉/肉品" data-type="ingredient">牛肉/肉品</button>
+            <button type="button" class="tag-btn" data-cat="河粉/麵條" data-type="ingredient">河粉/麵條</button>
+            <button type="button" class="tag-btn" data-cat="蔬菜/香草" data-type="ingredient">蔬菜/香草</button>
+            <button type="button" class="tag-btn" data-cat="醬料/調味" data-type="ingredient">醬料/調味</button>
+            <button type="button" class="tag-btn" data-cat="包材/餐具" data-type="ingredient">包材/餐具</button>
+            <button type="button" class="tag-btn" data-cat="其他食材" data-type="ingredient">其他食材</button>
         </div>
 
-        <ul class="item-list" id="invoice-list"></ul>
+        <div class="tag-group-title">【人事水電與固定雜支】</div>
+        <div class="tag-grid">
+            <button type="button" class="tag-btn" data-cat="工讀/人事薪資" data-type="operating">工讀/人事</button>
+            <button type="button" class="tag-btn" data-cat="瓦斯桶/瓦斯費" data-type="operating">瓦斯費用</button>
+            <button type="button" class="tag-btn" data-cat="電費/水費" data-type="operating">水電費用</button>
+            <button type="button" class="tag-btn" data-cat="維修/雜支" data-type="operating">維修雜支</button>
+            <button type="button" class="tag-btn" data-cat="其他費用" data-type="operating">其他費用</button>
+        </div>
+
+        <div class="field-group">
+            <label for="exp-name">廠商 / 員工名 / 項目備註（選填）</label>
+            <input type="text" id="exp-name" placeholder="例如：牛大骨、小明薪資、瓦斯桶">
+        </div>
+
+        <div class="field-group">
+            <label for="exp-amount">支出金額 (NT$)</label>
+            <input type="number" id="exp-amount" inputmode="numeric" placeholder="請輸入金額">
+        </div>
+
+        <button type="button" class="btn-main" id="add-exp-btn">＋ 加入支出清單</button>
+    </div>
+
+    <!-- 5. 今日明細清單與結算匯出 -->
+    <div class="card">
+        <div class="card-header">
+            <span>今日支出明細 (<span id="item-count">0</span> 筆)</span>
+        </div>
+
+        <ul class="item-list" id="expense-list"></ul>
 
         <div class="btn-group">
-            <button type="button" class="btn-sub" id="copy-btn">📋 複製結算文字</button>
-            <button type="button" class="btn-sub" id="clear-btn" style="color: var(--danger);">🗑️ 清空重記</button>
+            <button type="button" class="btn-sub" id="copy-summary-btn">📋 複製今日日結</button>
+            <button type="button" class="btn-sub" id="clear-today-btn" style="color: var(--danger);">🗑️ 重記今日</button>
+            <button type="button" class="btn-pdf" id="export-pdf-btn">📑 匯出本月營業月報表 (PDF 帳單)</button>
+        </div>
+    </div>
+
+    <!-- 6. 右側滑出選單（歷史月報抽屜） -->
+    <div class="drawer-backdrop" id="drawer-backdrop"></div>
+    <div class="sidebar-drawer" id="sidebar-drawer">
+        <div class="sidebar-header">
+            <h2>📜 歷史月報紀錄</h2>
+            <button type="button" class="btn-close-drawer" id="close-menu-btn">✕</button>
+        </div>
+        <div class="sidebar-content" id="history-list-container">
+            <!-- 動態注入歷史月報項目 -->
+        </div>
+    </div>
+
+    <!-- 7. PDF 帳單隱藏容器 -->
+    <div id="pdf-invoice-template">
+        <div class="pdf-title">🍲 家鄉園越南河粉 月度營運財務結算帳單</div>
+        <div class="pdf-subtitle" id="pdf-month-title"></div>
+        
+        <table class="pdf-table">
+            <thead>
+                <tr>
+                    <th>營運項目類別</th>
+                    <th>結算金額 (新台幣)</th>
+                    <th>備註說明</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>總營業額 (營收)</strong></td>
+                    <td id="pdf-income-val" style="font-weight:bold; color:#27ae60;">NT$ 0</td>
+                    <td>包含現場現金、全支付、外送平台</td>
+                </tr>
+                <tr>
+                    <td>食材與進貨成本</td>
+                    <td id="pdf-ingredient-val" style="color:#e67e22;">- NT$ 0</td>
+                    <td>肉品、生鮮河粉、蔬菜與包材</td>
+                </tr>
+                <tr>
+                    <td>人事與水電營運雜支</td>
+                    <td id="pdf-operating-val" style="color:#8e44ad;">- NT$ 0</td>
+                    <td>工讀薪資、瓦斯桶、水電瓦斯</td>
+                </tr>
+                <tr>
+                    <td>每月店面租金</td>
+                    <td id="pdf-rent-val" style="color:#e74c3c;">- NT$ 0</td>
+                    <td>每月固定租金攤提扣除</td>
+                </tr>
+                <tr style="background-color: #f8f9fa;">
+                    <td><strong>總成本支出合計</strong></td>
+                    <td id="pdf-total-cost-val" style="font-weight:bold; color:#e74c3c;">- NT$ 0</td>
+                    <td>食材進貨 + 人事水電 + 店面租金</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="pdf-total-box">
+            <div style="font-size: 16px; font-weight: bold; margin-bottom: 6px;">
+                🏆 本月結算實際純利：<span id="pdf-net-profit-val" style="color: #d35400; font-size: 20px;">NT$ 0</span>
+            </div>
+            <div style="font-size: 12px; color: #7f8c8d;" id="pdf-footer-desc"></div>
         </div>
     </div>
 
     <script>
-        const STORAGE_KEY = 'PHO_SHOP_DATA_' + new Date().toISOString().split('T')[0];
-        let items = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        let currentCategory = '牛肉/肉品';
+        // 月份與日期定義
+        const currentMonthKey = new Date().toISOString().slice(0, 7);
+        const currentDayKey = new Date().toISOString().slice(0, 10);
+        const STORAGE_KEY = 'PHO_STORE_MONTH_DATA_' + currentMonthKey;
 
-        const totalAmountEl = document.getElementById('total-amount');
-        const itemCountEl = document.getElementById('item-count');
-        const invoiceListEl = document.getElementById('invoice-list');
-        const itemNameEl = document.getElementById('item-name');
-        const itemAmountEl = document.getElementById('item-amount');
-        const addBtn = document.getElementById('add-btn');
-        const copyBtn = document.getElementById('copy-btn');
-        const clearBtn = document.getElementById('clear-btn');
-        const currentDateEl = document.getElementById('current-date');
-        const catButtons = document.querySelectorAll('.cat-btn');
+        // 初始化月度資料庫
+        let monthlyData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
+            rent: '',
+            days: {}
+        };
 
+        if (!monthlyData.days[currentDayKey]) {
+            monthlyData.days[currentDayKey] = {
+                income: { cash: '', pxpay: '', panda: '', uber: '' },
+                expenses: []
+            };
+        }
+
+        let selectedCategory = '牛肉/肉品';
+        let selectedType = 'ingredient';
+
+        // DOM 選取
+        const currentDateText = document.getElementById('current-date-text');
+        const monthEndBanner = document.getElementById('month-end-banner');
+        const rentInput = document.getElementById('monthly-rent-input');
+
+        const todayIncomeVal = document.getElementById('today-income-val');
+        const todayExpenseVal = document.getElementById('today-expense-val');
+        const todayNetVal = document.getElementById('today-net-val');
+        const monthIncomeVal = document.getElementById('month-income-val');
+        const monthNetVal = document.getElementById('month-net-val');
+
+        const incCash = document.getElementById('inc-cash');
+        const incPxpay = document.getElementById('inc-pxpay');
+        const incPanda = document.getElementById('inc-panda');
+        const incUber = document.getElementById('inc-uber');
+
+        const expName = document.getElementById('exp-name');
+        const expAmount = document.getElementById('exp-amount');
+        const addExpBtn = document.getElementById('add-exp-btn');
+        const expenseList = document.getElementById('expense-list');
+        const itemCount = document.getElementById('item-count');
+
+        const copySummaryBtn = document.getElementById('copy-summary-btn');
+        const clearTodayBtn = document.getElementById('clear-today-btn');
+        const exportPdfBtn = document.getElementById('export-pdf-btn');
+        const tagButtons = document.querySelectorAll('.tag-btn');
+
+        const openMenuBtn = document.getElementById('open-menu-btn');
+        const closeMenuBtn = document.getElementById('close-menu-btn');
+        const drawerBackdrop = document.getElementById('drawer-backdrop');
+        const sidebarDrawer = document.getElementById('sidebar-drawer');
+        const historyListContainer = document.getElementById('history-list-container');
+
+        // 日期在地化呈現
         const today = new Date();
-        currentDateEl.innerText = today.toLocaleDateString('zh-TW', {
+        currentDateText.innerText = today.toLocaleDateString('zh-TW', {
             year: 'numeric', month: 'long', day: 'numeric', weekday: 'long'
         });
 
-        catButtons.forEach(btn => {
+        // 月底提醒檢查
+        function checkMonthEnd() {
+            const nextDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+            if (nextDay.getDate() === 1) {
+                monthEndBanner.style.display = 'flex';
+            }
+        }
+        checkMonthEnd();
+
+        // 載入當前資料
+        rentInput.value = monthlyData.rent || '';
+        const todayRecord = monthlyData.days[currentDayKey];
+        incCash.value = todayRecord.income.cash || '';
+        incPxpay.value = todayRecord.income.pxpay || '';
+        incPanda.value = todayRecord.income.panda || '';
+        incUber.value = todayRecord.income.uber || '';
+
+        // 標籤切換
+        tagButtons.forEach(btn => {
             btn.addEventListener('click', () => {
-                catButtons.forEach(b => b.classList.remove('active'));
+                tagButtons.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                currentCategory = btn.dataset.cat;
+                selectedCategory = btn.dataset.cat;
+                selectedType = btn.dataset.type;
             });
         });
 
-        function render() {
-            invoiceListEl.innerHTML = '';
-            let total = 0;
+        // 核心計算與渲染
+        function updateAll() {
+            monthlyData.rent = rentInput.value;
+            todayRecord.income = {
+                cash: incCash.value,
+                pxpay: incPxpay.value,
+                panda: incPanda.value,
+                uber: incUber.value
+            };
 
-            if (items.length === 0) {
-                invoiceListEl.innerHTML = '<li class="empty-text">今天還沒有進貨紀錄，請輸入金額開始記帳！</li>';
+            const tCash = parseFloat(incCash.value) || 0;
+            const tPxpay = parseFloat(incPxpay.value) || 0;
+            const tPanda = parseFloat(incPanda.value) || 0;
+            const tUber = parseFloat(incUber.value) || 0;
+            const todayIncome = tCash + tPxpay + tPanda + tUber;
+
+            let todayExpense = 0;
+            expenseList.innerHTML = '';
+
+            if (todayRecord.expenses.length === 0) {
+                expenseList.innerHTML = '<li class="empty-text">今日尚無進貨或雜支明細</li>';
             } else {
-                items.forEach((item, index) => {
-                    total += Number(item.amount);
+                todayRecord.expenses.forEach((item, index) => {
+                    const amt = Number(item.amount);
+                    todayExpense += amt;
+                    const isIng = item.type === 'ingredient';
+                    const badgeClass = isIng ? 'badge-ing' : 'badge-ope';
+                    const badgeText = isIng ? '食材' : '雜支';
+
                     const li = document.createElement('li');
                     li.className = 'item-row';
                     li.innerHTML = `
                         <div>
-                            <div class="item-title">${item.name || item.category}</div>
-                            <div class="item-subtitle">${item.category} · ${item.time}</div>
+                            <div class="item-name">${item.name || item.category}</div>
+                            <div class="item-meta">
+                                <span class="${badgeClass}">${badgeText}</span> · ${item.category} · ${item.time}
+                            </div>
                         </div>
-                        <div class="item-right">
-                            <div class="item-cost">NT$ ${Number(item.amount).toLocaleString()}</div>
-                            <button class="btn-del" onclick="deleteItem(${index})">✕</button>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div class="item-cost">- NT$ ${amt.toLocaleString()}</div>
+                            <button class="btn-del" onclick="deleteExpense(${index})">✕</button>
                         </div>
                     `;
-                    invoiceListEl.appendChild(li);
+                    expenseList.appendChild(li);
                 });
             }
 
-            totalAmountEl.innerText = `NT$ ${total.toLocaleString()}`;
-            itemCountEl.innerText = items.length;
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+            const todayNet = todayIncome - todayExpense;
+
+            let monthTotalIncome = 0;
+            let monthTotalExpense = 0;
+
+            Object.values(monthlyData.days).forEach(day => {
+                const dCash = parseFloat(day.income.cash) || 0;
+                const dPxpay = parseFloat(day.income.pxpay) || 0;
+                const dPanda = parseFloat(day.income.panda) || 0;
+                const dUber = parseFloat(day.income.uber) || 0;
+                monthTotalIncome += (dCash + dPxpay + dPanda + dUber);
+
+                day.expenses.forEach(e => monthTotalExpense += Number(e.amount));
+            });
+
+            const monthlyRent = parseFloat(monthlyData.rent) || 0;
+            const monthNetProfit = monthTotalIncome - monthTotalExpense - monthlyRent;
+
+            todayIncomeVal.innerText = `NT$ ${todayIncome.toLocaleString()}`;
+            todayExpenseVal.innerText = `NT$ ${todayExpense.toLocaleString()}`;
+            todayNetVal.innerText = `NT$ ${todayNet.toLocaleString()}`;
+            monthIncomeVal.innerText = `NT$ ${monthTotalIncome.toLocaleString()}`;
+            monthNetVal.innerText = `NT$ ${monthNetProfit.toLocaleString()}`;
+            itemCount.innerText = todayRecord.expenses.length;
+
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(monthlyData));
         }
 
-        function addItem() {
-            const amount = parseFloat(itemAmountEl.value);
+        [incCash, incPxpay, incPanda, incUber, rentInput].forEach(inp => {
+            inp.addEventListener('input', updateAll);
+        });
+
+        function addExpense() {
+            const amount = parseFloat(expAmount.value);
             if (!amount || amount <= 0) {
-                alert('請輸入正確的金額！');
-                itemAmountEl.focus();
+                alert('請輸入有效金額！');
+                expAmount.focus();
                 return;
             }
 
             const now = new Date();
             const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-            items.unshift({
-                name: itemNameEl.value.trim(),
-                category: currentCategory,
+            todayRecord.expenses.unshift({
+                name: expName.value.trim(),
+                category: selectedCategory,
+                type: selectedType,
                 amount: amount,
                 time: timeStr
             });
 
-            render();
-            itemNameEl.value = '';
-            itemAmountEl.value = '';
-            itemAmountEl.focus();
+            expName.value = '';
+            expAmount.value = '';
+            expAmount.focus();
+            updateAll();
         }
 
-        window.deleteItem = function(index) {
+        window.deleteExpense = function(index) {
             if (confirm('確定要刪除這筆紀錄嗎？')) {
-                items.splice(index, 1);
-                render();
+                todayRecord.expenses.splice(index, 1);
+                updateAll();
             }
         };
 
-        function copySummary() {
-            if (items.length === 0) {
-                alert('目前沒有資料可複製！');
+        function copyTodaySummary() {
+            const tCash = parseFloat(incCash.value) || 0;
+            const tPxpay = parseFloat(incPxpay.value) || 0;
+            const tPanda = parseFloat(incPanda.value) || 0;
+            const tUber = parseFloat(incUber.value) || 0;
+            const todayIncome = tCash + tPxpay + tPanda + tUber;
+
+            let todayExpense = 0;
+            let ingText = [];
+            let opeText = [];
+
+            todayRecord.expenses.forEach(item => {
+                todayExpense += item.amount;
+                if (item.type === 'ingredient') {
+                    ingText.push(`• [${item.category}] ${item.name || '進貨'}：NT$ ${item.amount.toLocaleString()}`);
+                } else {
+                    opeText.push(`• [${item.category}] ${item.name || '雜支'}：NT$ ${item.amount.toLocaleString()}`);
+                }
+            });
+
+            let report = `【🍲 家鄉園越南河粉 今日收攤結算】\n`;
+            report += `📅 日期：${currentDateText.innerText}\n`;
+            report += `====================\n`;
+            report += `💰 【今日營業額收入】\n`;
+            report += `• 現金：NT$ ${tCash.toLocaleString()}\n`;
+            report += `• 全支付：NT$ ${tPxpay.toLocaleString()}\n`;
+            report += `• Foodpanda：NT$ ${tPanda.toLocaleString()}\n`;
+            report += `• Uber Eats：NT$ ${tUber.toLocaleString()}\n`;
+            report += `▶ 今日營業額總計：NT$ ${todayIncome.toLocaleString()}\n`;
+            report += `--------------------\n`;
+            report += `🥬 【今日食材進貨】\n` + (ingText.length ? ingText.join('\n') + '\n' : '• 無進貨紀錄\n');
+            report += `--------------------\n`;
+            report += `💡 【人事水電雜支】\n` + (opeText.length ? opeText.join('\n') + '\n' : '• 無人事雜支\n');
+            report += `====================\n`;
+            report += `📊 今日總支出：NT$ ${todayExpense.toLocaleString()}\n`;
+            report += `🏆 今日結算淨額：NT$ ${(todayIncome - todayExpense).toLocaleString()}\n`;
+            report += `====================`;
+
+            navigator.clipboard.writeText(report).then(() => {
+                alert('已複製今日結算報表！可以直接貼到 LINE。');
+            });
+        }
+
+        function clearToday() {
+            if (confirm('確定要清空今天所有的紀錄嗎？（不影響本月其他天數）')) {
+                todayRecord.income = { cash: '', pxpay: '', panda: '', uber: '' };
+                todayRecord.expenses = [];
+                incCash.value = '';
+                incPxpay.value = '';
+                incPanda.value = '';
+                incUber.value = '';
+                updateAll();
+            }
+        }
+
+        function generateMonthPDF(monthKey, dataObj) {
+            let mIncome = 0;
+            let mIngredient = 0;
+            let mOperating = 0;
+
+            Object.values(dataObj.days).forEach(day => {
+                const c = parseFloat(day.income?.cash) || 0;
+                const p = parseFloat(day.income?.pxpay) || 0;
+                const f = parseFloat(day.income?.panda) || 0;
+                const u = parseFloat(day.income?.uber) || 0;
+                mIncome += (c + p + f + u);
+
+                (day.expenses || []).forEach(e => {
+                    if (e.type === 'ingredient') mIngredient += Number(e.amount);
+                    else mOperating += Number(e.amount);
+                });
+            });
+
+            const mRent = parseFloat(dataObj.rent) || 0;
+            const totalCost = mIngredient + mOperating + mRent;
+            const netProfit = mIncome - totalCost;
+
+            document.getElementById('pdf-month-title').innerText = `結算月份：${monthKey} · 匯出時間：${currentDayKey}`;
+            document.getElementById('pdf-income-val').innerText = `NT$ ${mIncome.toLocaleString()}`;
+            document.getElementById('pdf-ingredient-val').innerText = `- NT$ ${mIngredient.toLocaleString()}`;
+            document.getElementById('pdf-operating-val').innerText = `- NT$ ${mOperating.toLocaleString()}`;
+            document.getElementById('pdf-rent-val').innerText = `- NT$ ${mRent.toLocaleString()}`;
+            document.getElementById('pdf-total-cost-val').innerText = `- NT$ ${totalCost.toLocaleString()}`;
+            document.getElementById('pdf-net-profit-val').innerText = `NT$ ${netProfit.toLocaleString()}`;
+            document.getElementById('pdf-footer-desc').innerText = `本帳單由家鄉園越南河粉財務系統自動彙整生成，包含 ${monthKey} 月份之完整營業額、食材採買、營運水電及每月店面租金。`;
+
+            const element = document.getElementById('pdf-invoice-template');
+            element.style.display = 'block';
+
+            const opt = {
+                margin:       10,
+                filename:     `家鄉園越南河粉營運月報_${monthKey}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                element.style.display = 'none';
+            });
+        }
+
+        function exportCurrentMonthPDF() {
+            generateMonthPDF(currentMonthKey, monthlyData);
+        }
+
+        function openDrawer() {
+            renderHistoryList();
+            drawerBackdrop.classList.add('active');
+            sidebarDrawer.classList.add('open');
+        }
+
+        function closeDrawer() {
+            sidebarDrawer.classList.remove('open');
+            drawerBackdrop.classList.remove('active');
+        }
+
+        function renderHistoryList() {
+            historyListContainer.innerHTML = '';
+            const allMonthKeys = [];
+
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith('PHO_STORE_MONTH_DATA_')) {
+                    const month = key.replace('PHO_STORE_MONTH_DATA_', '');
+                    allMonthKeys.push(month);
+                }
+            }
+
+            allMonthKeys.sort().reverse();
+
+            if (allMonthKeys.length === 0) {
+                historyListContainer.innerHTML = '<div class="empty-text">尚無任何歷史月份紀錄</div>';
                 return;
             }
 
-            let total = 0;
-            let text = `【河粉小店 每日進貨結算】\n日期：${currentDateEl.innerText}\n--------------------\n`;
-            items.forEach((item, i) => {
-                total += item.amount;
-                text += `${i + 1}. [${item.category}] ${item.name || '進貨'} - NT$ ${item.amount.toLocaleString()}\n`;
-            });
-            text += `--------------------\n共 ${items.length} 筆，總計支出：NT$ ${total.toLocaleString()}`;
+            allMonthKeys.forEach(mKey => {
+                const data = JSON.parse(localStorage.getItem('PHO_STORE_MONTH_DATA_' + mKey));
+                if (!data) return;
 
-            navigator.clipboard.writeText(text).then(() => {
-                alert('已複製今日結算報表！可以直接貼到 LINE。');
-            }).catch(() => {
-                alert('複製失敗，請手動複製。');
+                let income = 0;
+                let cost = 0;
+
+                Object.values(data.days || {}).forEach(d => {
+                    const c = parseFloat(d.income?.cash) || 0;
+                    const p = parseFloat(d.income?.pxpay) || 0;
+                    const f = parseFloat(d.income?.panda) || 0;
+                    const u = parseFloat(d.income?.uber) || 0;
+                    income += (c + p + f + u);
+                    (d.expenses || []).forEach(e => cost += Number(e.amount));
+                });
+
+                const rent = parseFloat(data.rent) || 0;
+                const net = income - cost - rent;
+
+                const card = document.createElement('div');
+                card.className = 'history-card';
+                card.innerHTML = `
+                    <div class="history-card-header">
+                        <span>📅 ${mKey} ${mKey === currentMonthKey ? '<span style="font-size:0.75rem; color:#27ae60;">(本月)</span>' : ''}</span>
+                    </div>
+                    <div class="history-stat-row">
+                        <span>累積營收：</span>
+                        <strong style="color: var(--income);">NT$ ${income.toLocaleString()}</strong>
+                    </div>
+                    <div class="history-stat-row">
+                        <span>總支出(含租金)：</span>
+                        <strong style="color: var(--danger);">NT$ ${(cost + rent).toLocaleString()}</strong>
+                    </div>
+                    <div class="history-stat-row">
+                        <span>結算純利：</span>
+                        <strong style="color: #2980b9;">NT$ ${net.toLocaleString()}</strong>
+                    </div>
+                    <button type="button" class="btn-history-pdf" onclick="downloadHistoryMonthPDF('${mKey}')">
+                        📥 匯出此月 PDF 帳單
+                    </button>
+                `;
+                historyListContainer.appendChild(card);
             });
         }
 
-        function clearAll() {
-            if (items.length === 0) return;
-            if (confirm('確定要清空今天所有的進貨紀錄嗎？')) {
-                items = [];
-                render();
+        window.downloadHistoryMonthPDF = function(mKey) {
+            const data = JSON.parse(localStorage.getItem('PHO_STORE_MONTH_DATA_' + mKey));
+            if (data) {
+                generateMonthPDF(mKey, data);
             }
-        }
+        };
 
-        addBtn.addEventListener('click', addItem);
-        copyBtn.addEventListener('click', copySummary);
-        clearBtn.addEventListener('click', clearAll);
+        // 事件綁定
+        addExpBtn.addEventListener('click', addExpense);
+        copySummaryBtn.addEventListener('click', copyTodaySummary);
+        clearTodayBtn.addEventListener('click', clearToday);
+        exportPdfBtn.addEventListener('click', exportCurrentMonthPDF);
 
-        itemAmountEl.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') addItem();
+        openMenuBtn.addEventListener('click', openDrawer);
+        closeMenuBtn.addEventListener('click', closeDrawer);
+        drawerBackdrop.addEventListener('click', closeDrawer);
+
+        expAmount.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addExpense();
         });
 
-        render();
+        // 初始載入渲染
+        updateAll();
     </script>
 </body>
 </html>
